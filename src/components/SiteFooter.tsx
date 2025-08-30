@@ -1,17 +1,26 @@
 // src/components/SiteFooter.tsx
-"use client";
+import Link from "next/link";
 
 export default function SiteFooter() {
   return (
-    <footer className="bg-white border-t">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 text-sm text-gray-600">
-        <div className="flex flex-wrap gap-4">
-          <a href="#" className="hover:text-blue-600">利用規約</a>
-          <a href="#" className="hover:text-blue-600">プライバシーポリシー</a>
-          <a href="#" className="hover:text-blue-600">ガイドライン</a>
-          <a href="#" className="hover:text-blue-600">お問い合わせ</a>
-        </div>
-        <p className="mt-3">© 2025 Linkle</p>
+    <footer className="border-t bg-white mt-10">
+      <div className="mx-auto max-w-7xl px-4 py-6 text-sm text-gray-600 flex flex-col sm:flex-row justify-between gap-4">
+        <p>© 2025 Linkle運営事務局</p>
+
+        <nav className="flex flex-wrap gap-4">
+          <Link href="/terms" className="hover:text-blue-600 transition-colors">
+            利用規約
+          </Link>
+          <Link href="/privacy" className="hover:text-blue-600 transition-colors">
+            プライバシーポリシー
+          </Link>
+          <Link href="/guidelines" className="hover:text-blue-600 transition-colors">
+            コミュニティガイドライン
+          </Link>
+          <Link href="/legal" className="hover:text-blue-600 transition-colors">
+            特定商取引法に基づく表記
+          </Link>
+        </nav>
       </div>
     </footer>
   );
