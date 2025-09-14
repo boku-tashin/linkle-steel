@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #ffffff;  /* 常に白背景 */
+  --foreground: #171717;  /* 文字色は黒系 */
 }
 
 @theme inline {
@@ -12,15 +12,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* 👇 ダークモード対応を削除 or コメントアウトしました
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
 }
+*/
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: #ffffff !important; /* 常に白で固定 */
+  color: #171717;                 /* 黒文字 */
   font-family: Arial, Helvetica, sans-serif;
 }

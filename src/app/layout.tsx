@@ -5,6 +5,8 @@ import "./globals.css";
 import TopNav from "@/components/TopNav";
 import SiteFooter from "@/components/SiteFooter";
 import Script from "next/script";
+// ▼ 追加（1行）：NextAuth のクライアント用プロバイダ
+import AuthSessionProvider from "./SessionProviderClient";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,18 +26,15 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Linkle | まかせてつながる募集掲示板",
     description:
-      "スポーツ・学習・趣味の募集をサクッと作成＆参加。スマホ最適のシンプル設計で“会いたい人”とすぐ出会える.",
+      "スポーツ・学習・趣味の募集をサクッと作成＆参加。スマホ最適のシンプル設計で“会いたい人”とすぐ出会える。",
     type: "website",
-    url: "https://example.com/",
-    images: [{ url: "/sample/new.svg", width: 800, height: 500, alt: "Linkle" }],
+    url: "https://linkle-steel.vercel.app/",
+    images: [{ url: "/ogp.jpg", width: 1200, height: 630, alt: "Linkle" }],
   },
-  // ★ ローカル確認時は 3010 にしておくとベター
-  metadataBase: new URL("http://localhost:3010"),
-
-  // ★ ここだけ差し替え：/favicon.ico 参照をやめて /icon.png を明示
+  metadataBase: new URL("https://linkle-steel.vercel.app/"),
   icons: {
     icon: "/icon.png",
-    apple: "/icon.png", // iOSのホーム追加など
+    apple: "/icon.png",
   },
 };
 
@@ -71,7 +70,8 @@ export default function RootLayout({
       </head>
 
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-[#111827] min-h-screen flex flex-col selection:bg-blue-200/60`}
+      suppressHydrationWarning   // ← これを追加
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-[#111827] min-h-screen flex flex-col justify-between selection:bg-blue-200/60`}
       >
         {/* キーボード操作のA11y: スキップリンク */}
         <a
@@ -81,13 +81,15 @@ export default function RootLayout({
           コンテンツへスキップ
         </a>
 
-        {/* ★ ここから追加（既存構造は維持） */}
-        <TopNav />
-        <main id="main" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
-        {/* ★ ここまで追加 */}
+        {/* ▼▼▼ 追加：NextAuth の SessionProvider で全体を包む ▼▼▼ */}
+        <AuthSessionProvider>
+          <TopNav />
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+          <SiteFooter />
+        </AuthSessionProvider>
+        {/* ▲▲▲ ここまで ▲▲▲ */}
       </body>
     </html>
   );

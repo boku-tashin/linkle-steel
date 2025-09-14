@@ -2,26 +2,61 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import AuthModal from "@/components/AuthModal";
-// ▼ 追加：ロゴ画像を使うため
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+// ▼ NextAuth 追加
+import { useSession, signIn, signOut } from "next-auth/react";
+// ▼ 追加：未読バッジ付き 主催者受信箱ボタン
+import HostInboxButton from "@/components/HostInboxButton";
 
 export default function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
+
+  // ▼ NextAuth セッション
+  const { data: session } = useSession();
+  const user = session?.user;
+  const isLoggedIn = !!user;
+
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
 
-  // 認証UI
-  const [authOpen, setAuthOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // ▼ プロフィールドロップダウン
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileBtnRef = useRef<HTMLButtonElement | null>(null);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
-  // 画面遷移でドロワーを閉じる
+  // 画面遷移でドロワー/プロフィールメニューを閉じる
   useEffect(() => {
     setOpen(false);
+    setProfileOpen(false);
   }, [pathname]);
+
+  // プロフィールドロップダウンの外側クリック/ESCで閉じる
+  useEffect(() => {
+    if (!profileOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(t) &&
+        profileBtnRef.current &&
+        !profileBtnRef.current.contains(t)
+      ) {
+        setProfileOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setProfileOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [profileOpen]);
 
   // 検索（フォーム送信/クリック両対応）
   const onSearch = (e?: React.FormEvent | React.MouseEvent) => {
@@ -30,120 +65,219 @@ export default function TopNav() {
     router.push(url);
   };
 
-  // 既存のナビ配列（互換用・モバイルで使用）
-  const items = useMemo(
-    () => [
-      { href: "/", label: "募集を探す" },
-      { href: "/listings/new", label: "募集を作成" },
-    ],
-    []
-  );
+  // ログアウト
+  const onLogout = async () => {
+    setProfileOpen(false);
+    setOpen(false);
+    await signOut({ callbackUrl: "/" });
+  };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b">
-      <div className="mx-auto max-w-7xl h-14 px-3 sm:px-6 lg:px-8">
-        <div className="h-full flex items-center gap-3">
-          {/* ロゴ */}
-          <Link href="/" className="flex items-center gap-2 shrink-0 group">
-            {/* ▼ 追加：ロゴ画像（public 配下に logo.png を置いてください） */}
-            <Image
-              src="/logo.png"
-              alt="Linkle ロゴ"
-              width={120}
-              height={30}
-              priority
-              className="h-6 w-auto sm:h-7"
-            />
-            {/* ▼ 元の四角ロゴは残す（非表示）※削除しない */}
-            <div className="h-7 w-7 rounded-md bg-gradient-to-br from-blue-600 to-indigo-500 group-hover:scale-[1.03] transition-transform hidden" />
-          </Link>
-
-          {/* 検索（md〜） */}
-          <form onSubmit={onSearch} className="hidden md:block flex-1">
-            <div className="relative max-w-xl mx-4">
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                type="text"
-                placeholder="キーワードで探す（例：フットサル 渋谷）"
-                className="w-full rounded-full border px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none
-                           text-gray-900 placeholder:text-gray-500"
-                aria-label="サイト内検索"
+    <>
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl h-14 px-3 sm:px-6 lg:px-8">
+          <div className="h-full flex items-center gap-3">
+            {/* ロゴ */}
+            <Link
+              href="/"
+              className="flex items-center gap-2 shrink-0 group"
+              aria-label="Linkle ホームへ"
+            >
+              <Image
+                src="/logo.png"
+                alt="Linkle ロゴ"
+                width={120}
+                height={30}
+                priority
+                className="h-6 w-auto sm:h-7"
               />
-              <button
-                type="submit"
-                onClick={onSearch}
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full px-4 py-1.5 text-sm bg-blue-600 text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-                aria-label="検索"
-              >
-                検索
-              </button>
-            </div>
-          </form>
+              {/* 旧ロゴ（互換目的・非表示のまま残置） */}
+              <div className="h-7 w-7 rounded-md bg-gradient-to-br from-blue-600 to-indigo-500 group-hover:scale-[1.03] transition-transform hidden" />
+            </Link>
 
-          {/* 右エリア（PC） */}
-          <nav className="ml-auto hidden sm:flex items-center gap-3">
-            {/* 機能グループ：募集一覧・募集する */}
-            <div className="flex items-center gap-2">
-              <Link
-                href="/"
-                className="px-3 py-2 rounded-full text-sm border text-gray-900 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-              >
-                募集一覧
-              </Link>
-              <Link
-                href="/listings/new"
-                className="px-3 py-2 rounded-full bg-blue-600 text-white text-sm transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-              >
-                募集する
-              </Link>
-            </div>
-
-            {/* 区切り線 */}
-            <span className="h-6 w-px bg-gray-200" aria-hidden />
-
-            {/* 認証グループ：ログイン・新規登録（ログイン済みなら非表示） */}
-            {isLoggedIn ? (
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-gray-300" aria-label="プロフィール" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
+            {/* 検索（md〜） */}
+            <form onSubmit={onSearch} className="hidden md:block flex-1">
+              <div className="relative max-w-xl mx-4">
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  type="text"
+                  placeholder="キーワードで探す（例：フットサル 渋谷）"
+                  className="w-full rounded-full px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-gray-900 placeholder:text-gray-500"
+                  aria-label="サイト内検索"
+                />
                 <button
-                  onClick={() => setAuthOpen(true)}
+                  type="submit"
+                  onClick={onSearch}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full px-4 py-1.5 text-sm bg-blue-600 text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                  aria-label="検索"
+                >
+                  検索
+                </button>
+              </div>
+            </form>
+
+            {/* 右エリア（PC） */}
+            <nav className="ml-auto hidden sm:flex items-center gap-3">
+              {/* 機能グループ：募集一覧・募集する */}
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/"
+                  className="px-3 py-2 rounded-full text-sm bg-blue-50 text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                >
+                  募集一覧
+                </Link>
+                <Link
+                  href="/listings/new"
                   className="px-3 py-2 rounded-full bg-blue-600 text-white text-sm transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
                 >
-                  ログイン
-                </button>
-                <button
-                  onClick={() => setAuthOpen(true)}
-                  className="px-3 py-2 rounded-full border text-sm text-gray-900 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-                >
-                  新規登録
-                </button>
+                  募集する
+                </Link>
               </div>
-            )}
-          </nav>
 
-          {/* モバイルメニュー */}
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="ml-auto sm:hidden p-2 rounded-full hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-            aria-label="メニュー"
-            aria-expanded={open}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" className="text-gray-900">
-              <path fill="currentColor" d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z" />
-            </svg>
-          </button>
+              {/* ▼ 追加：主催者受信箱（未読バッジ付き） */}
+              <HostInboxButton />
+
+              {/* 仕切り線（薄いグレー） */}
+              <span className="h-6 w-px bg-gray-200" aria-hidden />
+
+              {/* 認証グループ */}
+              {isLoggedIn ? (
+                <div className="relative">
+                  <button
+                    ref={profileBtnRef}
+                    onClick={() => setProfileOpen((v) => !v)}
+                    className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 overflow-hidden"
+                    aria-haspopup="menu"
+                    aria-expanded={profileOpen}
+                    aria-label="プロフィールメニュー"
+                  >
+                    {user?.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={user.image}
+                        alt={user.name ?? "profile"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        className="text-gray-700"
+                      >
+                        <path
+                          fill="currentColor"
+                          d="M12 12a5 5 0 1 0-5-5a5 5 0 0 0 5 5m0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5"
+                        />
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* プロフィールドロップダウン */}
+                  {profileOpen && (
+                    <div
+                      ref={profileMenuRef}
+                      role="menu"
+                      aria-label="プロフィール"
+                      className="absolute right-0 mt-2 w-56 rounded-2xl bg-white shadow-lg p-2"
+                    >
+                      <div className="px-3 py-2">
+                        <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                          {user?.name ?? "ユーザー"}
+                        </p>
+                        {user?.email && (
+                          <p className="text-xs text-gray-500 line-clamp-1">
+                            {user.email}
+                          </p>
+                        )}
+                      </div>
+                      <Link
+                        href="/mypage"
+                        onClick={() => setProfileOpen(false)}
+                        className="block w-full text-left rounded-xl px-3 py-2 text-sm hover:bg-blue-50 hover:text-blue-700 transition"
+                        role="menuitem"
+                      >
+                        マイページ
+                      </Link>
+                      <Link
+                        href="/mypage/settings"
+                        onClick={() => setProfileOpen(false)}
+                        className="block w-full text-left rounded-xl px-3 py-2 text-sm hover:bg-blue-50 hover:text-blue-700 transition"
+                        role="menuitem"
+                      >
+                        設定
+                      </Link>
+                      <button
+                        onClick={onLogout}
+                        className="mt-1 block w-full text-left rounded-xl px-3 py-2 text-sm hover:bg-blue-50 hover:text-blue-700 transition"
+                        role="menuitem"
+                      >
+                        ログアウト
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => signIn(undefined, { callbackUrl: "/" })}
+                    className="px-3 py-2 rounded-full bg-blue-600 text-white text-sm transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                  >
+                    ログイン
+                  </button>
+                  <button
+                    onClick={() => signIn(undefined, { callbackUrl: "/" })}
+                    className="px-3 py-2 rounded-full text-sm bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                  >
+                    新規登録
+                  </button>
+                </div>
+              )}
+            </nav>
+
+            {/* モバイルメニュー（トグル） */}
+            <button
+              onClick={() => setOpen((v) => !v)}
+              className="ml-auto sm:hidden p-2 rounded-full hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+              aria-label="メニュー"
+              aria-expanded={open}
+              aria-controls="mobile-drawer"
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                className="text-gray-900"
+              >
+                <path
+                  fill="currentColor"
+                  d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* モバイルドロワー */}
+      {/* モバイルドロワー：背景は見える＋外側タップで閉じる＋スクロール可 */}
       {open && (
-        <div className="sm:hidden border-t bg-white">
-          <div className="px-4 py-3 space-y-4">
-            {/* 検索 */}
+        <div
+          id="mobile-drawer"
+          className="fixed inset-0 z-50 sm:hidden"
+          aria-modal="true"
+          role="dialog"
+          onClick={() => setOpen(false)} // 外側クリックで閉じる
+        >
+          {/* 半透明オーバーレイ（元画面は見える） */}
+          <div className="absolute inset-0 bg-black/30" />
+
+          {/* ドロワー本体（タップを伝播させない） */}
+          <div
+            className="absolute left-0 right-0 top-0 bg-white rounded-b-2xl shadow-lg p-4 pt-5 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* モバイル検索 */}
             <form onSubmit={onSearch}>
               <div className="relative">
                 <input
@@ -151,85 +285,101 @@ export default function TopNav() {
                   onChange={(e) => setQ(e.target.value)}
                   type="text"
                   placeholder="キーワードで探す"
-                  className="w-full rounded-full border px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-gray-900 placeholder:text-gray-500"
+                  className="w-full rounded-full px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-gray-900 placeholder:text-gray-500"
                 />
                 <button
                   type="submit"
                   onClick={onSearch}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full px-4 py-1.5 text-sm bg-blue-600 text-white"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full px-4 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 transition"
                 >
                   検索
                 </button>
               </div>
             </form>
 
-            {/* 機能グループ */}
-            <div>
-              <p className="text-xs text-gray-500 mb-2">募集</p>
-              <div className="flex flex-col gap-2">
-                <Link
-                  href="/"
-                  className="px-4 py-2 rounded-xl border text-sm text-gray-900 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
-                >
-                  募集一覧
-                </Link>
-                <Link
-                  href="/listings/new"
-                  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm text-center hover:bg-blue-700 transition-colors"
-                >
-                  募集する
-                </Link>
-              </div>
-            </div>
-
-            {/* 認証グループ */}
-            {!isLoggedIn && (
+            <div className="mt-4 space-y-5">
+              {/* 機能グループ */}
               <div>
-                <p className="text-xs text-gray-500 mb-2">アカウント</p>
+                <p className="text-xs text-gray-500 mb-2">募集</p>
                 <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => setAuthOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm text-left hover:bg-blue-700 transition-colors"
+                  <Link
+                    href="/"
+                    onClick={() => setOpen(false)}
+                    className="px-4 py-2 rounded-xl text-sm text-gray-900 bg-white shadow-sm hover:bg-blue-50 hover:text-blue-700 transition text-center"
                   >
-                    ログイン
-                  </button>
-                  <button
-                    onClick={() => setAuthOpen(true)}
-                    className="px-4 py-2 rounded-xl border text-sm text-left text-gray-900 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
+                    募集一覧
+                  </Link>
+                  <Link
+                    href="/listings/new"
+                    onClick={() => setOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700 transition text-center"
                   >
-                    新規登録
-                  </button>
+                    募集する
+                  </Link>
+
+                  {/* ▼ 追加：主催者受信箱（未読バッジ付き） */}
+                  <HostInboxButton asItem />
                 </div>
               </div>
-            )}
 
-            {/* 既存リンク（互換） */}
-            <div className="pt-2 border-t">
-              <div className="mt-3 flex flex-col gap-2">
-                {items.map((it) => (
-                  <Link
-                    key={it.href}
-                    href={it.href}
-                    className="px-4 py-2 rounded-xl border text-sm text-gray-900 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
-                  >
-                    {it.label}
-                  </Link>
-                ))}
-              </div>
+              {/* 認証/プロフィールグループ */}
+              {!isLoggedIn ? (
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">アカウント</p>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => {
+                        setOpen(false);
+                        signIn(undefined, { callbackUrl: "/" });
+                      }}
+                      className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700 transition text-center"
+                    >
+                      ログイン
+                    </button>
+                    <button
+                      onClick={() => {
+                        setOpen(false);
+                        signIn(undefined, { callbackUrl: "/" });
+                      }}
+                      className="px-4 py-2 rounded-xl text-sm text-gray-900 bg-white shadow-sm hover:bg-blue-50 hover:text-blue-700 transition text-center"
+                    >
+                      新規登録
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">プロフィール</p>
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href="/mypage"
+                      onClick={() => setOpen(false)}
+                      className="px-4 py-2 rounded-xl text-sm text-gray-900 bg-white shadow-sm hover:bg-blue-50 hover:text-blue-700 transition text-center"
+                    >
+                      マイページ
+                    </Link>
+                    <Link
+                      href="/settings"
+                      onClick={() => setOpen(false)}
+                      className="px-4 py-2 rounded-xl text-sm text-gray-900 bg-white shadow-sm hover:bg-blue-50 hover:text-blue-700 transition text-center"
+                    >
+                      設定
+                    </Link>
+                    <button
+                      onClick={onLogout}
+                      className="px-4 py-2 rounded-xl text-sm text-gray-900 bg-white shadow-sm hover:bg-blue-50 hover:text-blue-700 transition text-center"
+                    >
+                      ログアウト
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+
+            <div className="h-3" />
           </div>
         </div>
       )}
-
-      {/* 認証モーダル */}
-      <AuthModal
-        open={authOpen}
-        onClose={() => setAuthOpen(false)}
-        onLoginSuccess={() => {
-          setIsLoggedIn(true);
-          setAuthOpen(false);
-        }}
-      />
-    </header>
+    </>
   );
 }
