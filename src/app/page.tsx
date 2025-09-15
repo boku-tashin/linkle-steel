@@ -141,6 +141,19 @@ export default function Page() {
   // 人気ランキング（閲覧数降順トップ5）
   const ranking = [...ALL].sort((a, b) => b.views - a.views).slice(0, 5);
 
+  // ▼ 追加: note最新記事の状態と取得（元コードは削らない）
+  const [posts, setPosts] = useState<any[]>([]);
+  React.useEffect(() => {
+    fetch("/api/note/latest")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setPosts(data);
+      })
+      .catch(() => {});
+  }, []);
+  // ▼ 追加: 表示用にフォールバック（取得できなければ既存モック）
+  const renderPosts = posts.length ? posts : BLOG_POSTS;
+
   return (
     <div className="min-h-screen bg-gray-50 text-[#111827]">
       {/* 1. ヘッダー（重複防止のため、グローバルShell使用時は非表示） */}
@@ -496,7 +509,7 @@ className="h-full w-full"       // ← 高さ幅を親のアスペクト比に�
     </div>
 
     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-      {BLOG_POSTS.map((b) => (
+      {renderPosts.map((b: any) => (
         <a
           key={b.id}
           href={b.url}
@@ -530,7 +543,7 @@ className="h-full w-full"       // ← 高さ幅を親のアスペクト比に�
 
             {b.tags && b.tags.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
-                {b.tags.map((t) => (
+                {b.tags.map((t: string) => (
                   <span
                     key={t}
                     className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] font-medium"
@@ -550,7 +563,7 @@ className="h-full w-full"       // ← 高さ幅を親のアスペクト比に�
       {/* ▼ SPフィルタ：ボトムシート（モバイル専用） */}
       {filterOpen && (
         <div
-          className="fixed inset-0 z-50 md:hidden"
+          cclassName="fixed inset-0 z-50 md:hidden"
           role="dialog"
           aria-modal="true"
           onClick={() => setFilterOpen(false)}

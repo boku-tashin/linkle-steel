@@ -10,6 +10,7 @@ import { useParams } from "next/navigation";
 import { deleteListing } from "@/lib/mock-listings";
 import { hasJoined, join, leave } from "@/lib/join-store";
 import { pushNotification } from "@/lib/host-inbox";
+import { isClosingSoon } from "@/lib/listing-flags";
 import {
   getListingById,
   getSimilarListings,
@@ -417,6 +418,12 @@ export default function ListingDetailPage(/* { params }: { params: Promise<{ id:
                 >
                   {listing.feeType}
                 </span>
+    {isClosingSoon(listing) && (
+      <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
+        終了間近
+      </span>
+    )}
+
               </div>
 
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">{listing.title}</h1>
