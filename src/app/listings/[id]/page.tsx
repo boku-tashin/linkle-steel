@@ -70,40 +70,40 @@ export default function ListingDetailPage(/* { params }: { params: Promise<{ id:
   }, [listing?.id, isLoggedIn]);
 
   // ★ ログイン状態の復元＆同期（同タブでも検知できるように focus/visibilitychange を追加）
-useEffect(() => {
-  const read = () => {
-    try {
-      const raw = (localStorage.getItem("auth:loggedIn") || "").toString().trim().toLowerCase();
-      setIsLoggedIn(raw === "1" || raw === "true" || raw === "yes" || raw === "on");
-    } catch {
-      setIsLoggedIn(false);
-    }
-  };
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = (localStorage.getItem("auth:loggedIn") || "").toString().trim().toLowerCase();
+        setIsLoggedIn(raw === "1" || raw === "true" || raw === "yes" || raw === "on");
+      } catch {
+        setIsLoggedIn(false);
+      }
+    };
 
-  // 初回
-  read();
+    // 初回
+    read();
 
-  // 別タブ更新 → storage
-  const onStorage = (e: StorageEvent) => {
-    if (e.key === "auth:loggedIn") read();
-  };
+    // 別タブ更新 → storage
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "auth:loggedIn") read();
+    };
 
-  // 同タブでの変更後も検知：フォーカス復帰・可視化変更で再読込
-  const onFocus = () => read();
-  const onVisibility = () => {
-    if (document.visibilityState === "visible") read();
-  };
+    // 同タブでの変更後も検知：フォーカス復帰・可視化変更で再読込
+    const onFocus = () => read();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") read();
+    };
 
-  window.addEventListener("storage", onStorage);
-  window.addEventListener("focus", onFocus);
-  document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
 
-  return () => {
-    window.removeEventListener("storage", onStorage);
-    window.removeEventListener("focus", onFocus);
-    document.removeEventListener("visibilitychange", onVisibility);
-  };
-}, []);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
 
   // ★ 初期化：localStorage のお気に入りに現在の募集IDがあれば isFav=true
   useEffect(() => {
@@ -163,34 +163,34 @@ useEffect(() => {
   }, [listing?.id]);
 
   // 別タブ/別ウィンドウでの参加状態更新を監視して同期
-useEffect(() => {
-  if (!listing) return;
-  const recalc = () => {
-    try {
-      const joinedIds: string[] = JSON.parse(localStorage.getItem("auth:joined") || "[]");
-      const nowJoined =
-        (Array.isArray(joinedIds) && joinedIds.includes(listing.id)) || hasJoined(String(listing.id));
-      setJoined(nowJoined);
-      setIsJoined(nowJoined);
-      setLocalCapacityLeft(Math.max(0, (listing.capacityLeft ?? 0) - (nowJoined ? 1 : 0)));
-    } catch {
-      setJoined(false);
-      setIsJoined(false);
-      setLocalCapacityLeft(listing.capacityLeft ?? 0);
-    }
-  };
-  const onStorage = (e: StorageEvent) => {
-    if (e.key === "auth:joined") recalc();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => window.removeEventListener("storage", onStorage);
-}, [listing?.id, listing?.capacityLeft]);
+  useEffect(() => {
+    if (!listing) return;
+    const recalc = () => {
+      try {
+        const joinedIds: string[] = JSON.parse(localStorage.getItem("auth:joined") || "[]");
+        const nowJoined =
+          (Array.isArray(joinedIds) && joinedIds.includes(listing.id)) || hasJoined(String(listing.id));
+        setJoined(nowJoined);
+        setIsJoined(nowJoined);
+        setLocalCapacityLeft(Math.max(0, (listing.capacityLeft ?? 0) - (nowJoined ? 1 : 0)));
+      } catch {
+        setJoined(false);
+        setIsJoined(false);
+        setLocalCapacityLeft(listing.capacityLeft ?? 0);
+      }
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "auth:joined") recalc();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [listing?.id, listing?.capacityLeft]);
 
   const [joinConfirmOpen, setJoinConfirmOpen] = useState(false);
   const [joinSuccessOpen, setJoinSuccessOpen] = useState(false);
   // 参加/取消の二重押し防止
-const [joining, setJoining] = useState(false);
-const [leaving, setLeaving] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   // ★ 参加解除用
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
@@ -200,32 +200,32 @@ const [leaving, setLeaving] = useState(false);
   };
 
   const confirmLeave = () => {
-  if (leaving) return;
-  setLeaving(true);
-  setLeaveConfirmOpen(false);
-  try {
-    // 表示を即反映
-    setJoined(false);
-    setIsJoined(false); // 既存stateとも同期
-    setLocalCapacityLeft((n) => Math.max(0, n + 1)); // 念のため0割れ防止
-
-    // join-store と localStorage の両方を更新
-    if (listing) leave(String(listing.id));
+    if (leaving) return;
+    setLeaving(true);
+    setLeaveConfirmOpen(false);
     try {
-      let joinedIds: string[] = JSON.parse(localStorage.getItem("auth:joined") || "[]");
-      if (!Array.isArray(joinedIds)) joinedIds = [];
-      const next = joinedIds.filter((x) => x !== listing!.id);
-      localStorage.setItem("auth:joined", JSON.stringify(next));
-    } catch {
-      localStorage.setItem("auth:joined", JSON.stringify([]));
-    }
+      // 表示を即反映
+      setJoined(false);
+      setIsJoined(false); // 既存stateとも同期
+      setLocalCapacityLeft((n) => Math.max(0, n + 1)); // 念のため0割れ防止
 
-    setToast("参加を取り消しました");
-    setMsg({ type: "info", text: "参加を取り消しました。" });
-  } finally {
-    setLeaving(false);
-  }
-};
+      // join-store と localStorage の両方を更新
+      if (listing) leave(String(listing.id));
+      try {
+        let joinedIds: string[] = JSON.parse(localStorage.getItem("auth:joined") || "[]");
+        if (!Array.isArray(joinedIds)) joinedIds = [];
+        const next = joinedIds.filter((x) => x !== listing!.id);
+        localStorage.setItem("auth:joined", JSON.stringify(next));
+      } catch {
+        localStorage.setItem("auth:joined", JSON.stringify([]));
+      }
+
+      setToast("参加を取り消しました");
+      setMsg({ type: "info", text: "参加を取り消しました。" });
+    } finally {
+      setLeaving(false);
+    }
+  };
 
   // ▼ 問い合わせモーダル用の状態
   const [contactOpen, setContactOpen] = useState(false);
@@ -241,84 +241,84 @@ const [leaving, setLeaving] = useState(false);
     return () => clearTimeout(t);
   }, [toast]);
 
-const handleJoin = () => {
-  // 直前の localStorage を再読込して最新のログイン状態に同期
-  try {
-    const raw = (localStorage.getItem("auth:loggedIn") || "").toString().trim().toLowerCase();
-    const nowLoggedIn = raw === "1" || raw === "true" || raw === "yes" || raw === "on";
-    if (nowLoggedIn !== isLoggedIn) setIsLoggedIn(nowLoggedIn);
-    if (!nowLoggedIn) {
+  const handleJoin = () => {
+    // 直前の localStorage を再読込して最新のログイン状態に同期
+    try {
+      const raw = (localStorage.getItem("auth:loggedIn") || "").toString().trim().toLowerCase();
+      const nowLoggedIn = raw === "1" || raw === "true" || raw === "yes" || raw === "on";
+      if (nowLoggedIn !== isLoggedIn) setIsLoggedIn(nowLoggedIn);
+      if (!nowLoggedIn) {
+        setMsg({ type: "warn", text: "参加にはログインが必要です。画面右上からログインしてください。" });
+        return;
+      }
+    } catch {
       setMsg({ type: "warn", text: "参加にはログインが必要です。画面右上からログインしてください。" });
       return;
     }
-  } catch {
-    setMsg({ type: "warn", text: "参加にはログインが必要です。画面右上からログインしてください。" });
-    return;
-  }
 
-  if (joining || joined || localCapacityLeft <= 0) return; // 二重押し/満員ガード
-  setJoinConfirmOpen(true);
-};
+    if (joining || joined || localCapacityLeft <= 0) return; // 二重押し/満員ガード
+    setJoinConfirmOpen(true);
+  };
 
   // 置き換え：参加確定
-const confirmJoin = async () => {
-  if (joining) return;
-  setJoining(true);
-  setJoinConfirmOpen(false);
+  const confirmJoin = async () => {
+    if (joining) return;
+    setJoining(true);
+    setJoinConfirmOpen(false);
 
-  try {
-    // フェイク待ち
-    await new Promise((r) => setTimeout(r, 400));
-
-    // 画面状態を更新
-    setJoined(true);
-    setIsJoined(true);
-    setLocalCapacityLeft((n) => Math.max(0, n - 1));
-
-    // join-store へ保存
-    if (listing) join(String(listing.id));
-
-    // localStorage("auth:joined") も更新
     try {
-      let joinedIds: string[] = JSON.parse(localStorage.getItem("auth:joined") || "[]");
-      if (!Array.isArray(joinedIds)) joinedIds = [];
-      if (listing && !joinedIds.includes(listing.id)) {
-        joinedIds.push(listing.id);
-        localStorage.setItem("auth:joined", JSON.stringify(joinedIds));
-      }
-    } catch {
-      if (listing) localStorage.setItem("auth:joined", JSON.stringify([listing.id]));
-    }
+      // フェイク待ち
+      await new Promise((r) => setTimeout(r, 400));
 
-    // === 主催者へ通知（受信箱に1件追加） ===
-    if (listing?.host?.name) {
-      const hostName = String(listing.host.name).trim();
-      const listingTitle = String(listing.title || "");
-      const applicant =
-        (typeof window !== "undefined" && localStorage.getItem("auth:displayName")) ||
-        "ゲストユーザー";
+      // 画面状態を更新
+      setJoined(true);
+      setIsJoined(true);
+      setLocalCapacityLeft((n) => Math.max(0, n - 1));
 
-      pushNotification({
-        hostName,
-        listingId: String(listing.id),
-        listingTitle,
-        applicant: { name: applicant },
-        type: "join-request",
-      });
+      // join-store へ保存
+      if (listing) join(String(listing.id));
 
-      // 同一/別タブの受信箱に即時反映させるための軽いシグナル
+      // localStorage("auth:joined") も更新
       try {
-        window.dispatchEvent(new StorageEvent("storage", { key: "host:notifications" }));
-      } catch {}
-    }
-    // === /通知ここまで ===
+        let joinedIds: string[] = JSON.parse(localStorage.getItem("auth:joined") || "[]");
+        if (!Array.isArray(joinedIds)) joinedIds = [];
+        if (listing && !joinedIds.includes(listing.id)) {
+          joinedIds.push(listing.id);
+          localStorage.setItem("auth:joined", JSON.stringify(joinedIds));
+        }
+      } catch {
+        if (listing) localStorage.setItem("auth:joined", JSON.stringify([listing.id]));
+      }
 
-    setJoinSuccessOpen(true);
-    setMsg({ type: "success", text: "参加が確定しました。主催者からの連絡をお待ちください！" });
-  } finally {
-    setJoining(false);
-  }
-};
+      // === 主催者へ通知（受信箱に1件追加） ===
+      if (listing?.host?.name) {
+        const hostName = String(listing.host.name).trim();
+        const listingTitle = String(listing.title || "");
+        const applicant =
+          (typeof window !== "undefined" && localStorage.getItem("auth:displayName")) ||
+          "ゲストユーザー";
+
+        pushNotification({
+          hostName,
+          listingId: String(listing.id),
+          listingTitle,
+          applicant: { name: applicant },
+          type: "join-request",
+        });
+
+        // 同一/別タブの受信箱に即時反映させるための軽いシグナル
+        try {
+          window.dispatchEvent(new StorageEvent("storage", { key: "host:notifications" }));
+        } catch {}
+      }
+      // === /通知ここまで ===
+
+      setJoinSuccessOpen(true);
+      setMsg({ type: "success", text: "参加が確定しました。主催者からの連絡をお待ちください！" });
+    } finally {
+      setJoining(false);
+    }
+  };
 
   const handleDelete = () => {
     if (!listing) return;
@@ -460,41 +460,41 @@ const confirmJoin = async () => {
               </div>
 
               {/* 参加ボックス（PC） */}
-<div className="hidden sm:flex items-center gap-3 bg-white rounded-xl p-4 shadow-sm">
-  {!joined ? (
-    <>
-      <button
-        className="px-4 py-2 rounded-full bg-blue-600 text-white text-sm transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 active:translate-y-px disabled:opacity-60"
-        onClick={handleJoin}
-        disabled={localCapacityLeft <= 0 || joining}
-      >
-        {localCapacityLeft <= 0 ? "満員" : joining ? "処理中…" : "この募集に参加する"}
-      </button>
-      <button
-        className="px-4 py-2 rounded-full text-sm shadow-sm hover:bg-blue-50 hover:text-blue-700 transition-colors"
-        onClick={() => setFav((v) => !v)}
-      >
-        {isFav ? "お気に入りを外す" : "お気に入りに追加"}
-      </button>
-    </>
-  ) : (
-    <>
-      <button
-        className="px-4 py-2 rounded-full text-sm shadow-sm hover:bg-blue-50 hover:text-blue-700 transition-colors disabled:opacity-60"
-        onClick={requestLeave}
-        disabled={leaving}
-      >
-        {leaving ? "処理中…" : "参加を取り消す"}
-      </button>
-      <button
-        className="px-4 py-2 rounded-full text-sm shadow-sm hover:bg-blue-50 hover:text-blue-700 transition-colors"
-        onClick={() => setFav((v) => !v)}
-      >
-        {isFav ? "お気に入りを外す" : "お気に入りに追加"}
-      </button>
-    </>
-  )}
-</div>
+              <div className="hidden sm:flex items-center gap-3 bg-white rounded-xl p-4 shadow-sm">
+                {!joined ? (
+                  <>
+                    <button
+                      className="px-4 py-2 rounded-full bg-blue-600 text-white text-sm transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 active:translate-y-px disabled:opacity-60"
+                      onClick={handleJoin}
+                      disabled={localCapacityLeft <= 0 || joining}
+                    >
+                      {localCapacityLeft <= 0 ? "満員" : joining ? "処理中…" : "この募集に参加する"}
+                    </button>
+                    <button
+                      className="px-4 py-2 rounded-full text-sm shadow-sm hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                      onClick={() => setFav((v) => !v)}
+                    >
+                      {isFav ? "お気に入りを外す" : "お気に入りに追加"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="px-4 py-2 rounded-full text-sm shadow-sm hover:bg-blue-50 hover:text-blue-700 transition-colors disabled:opacity-60"
+                      onClick={requestLeave}
+                      disabled={leaving}
+                    >
+                      {leaving ? "処理中…" : "参加を取り消す"}
+                    </button>
+                    <button
+                      className="px-4 py-2 rounded-full text-sm shadow-sm hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                      onClick={() => setFav((v) => !v)}
+                    >
+                      {isFav ? "お気に入りを外す" : "お気に入りに追加"}
+                    </button>
+                  </>
+                )}
+              </div>
 
               {/* 簡易メッセージ（参加/取消結果など） */}
               {msg && (
@@ -615,54 +615,54 @@ const confirmJoin = async () => {
           </div>
 
           {/* モバイル固定CTA（罫線撤去→シャドウに） */}
-<div className="fixed inset-x-0 bottom-0 sm:hidden bg-white/95 backdrop-blur shadow-[0_-4px_10px_rgba(0,0,0,0.06)] p-3">
-  <div className="mx-auto max-w-6xl px-2 flex items-center gap-2">
-    {!joined ? (
-      <>
-        <button
-          className="flex-1 px-4 py-2 rounded-full bg-blue-600 text-white text-sm transition-colors hover:bg-blue-700 active:translate-y-px disabled:opacity-60"
-          onClick={handleJoin}
-          disabled={localCapacityLeft <= 0}
-        >
-          {localCapacityLeft <= 0 ? "満員" : joinConfirmOpen ? "処理中…" : "参加する"}
-        </button>
-        <button
-          onClick={() => setFav((v) => !v)}
-          disabled={joinConfirmOpen}
-          className={[
-            "px-4 py-2 rounded-full text-sm transition-colors shadow-sm",
-            isFav ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50 hover:text-blue-700",
-            joinConfirmOpen ? "opacity-60 cursor-not-allowed" : "",
-          ].join(" ")}
-        >
-          {isFav ? "お気に入り済" : "お気に入り"}
-        </button>
-      </>
-    ) : (
-      <>
-        <button
-          className="flex-1 px-4 py-2 rounded-full text-sm shadow-sm hover:bg-blue-50 hover:text-blue-700 active:translate-y-px disabled:opacity-60"
-          onClick={requestLeave}
-          disabled={leaveConfirmOpen}
-        >
-          {leaveConfirmOpen ? "取り消し中…" : "参加を取り消す"}
-        </button>
-        <button
-          onClick={() => setFav((v) => !v)}
-          disabled={leaveConfirmOpen}
-          className={[
-            "px-4 py-2 rounded-full text-sm transition-colors shadow-sm",
-            isFav ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50 hover:text-blue-700",
-            leaveConfirmOpen ? "opacity-60 cursor-not-allowed" : "",
-          ].join(" ")}
-        >
-          {isFav ? "お気に入り済" : "お気に入り"}
-        </button>
-      </>
-    )}
-  </div>
-  <div className="h-[env(safe-area-inset-bottom)]" />
-</div>
+          <div className="fixed inset-x-0 bottom-0 sm:hidden bg-white/95 backdrop-blur shadow-[0_-4px_10px_rgba(0,0,0,0.06)] p-3">
+            <div className="mx-auto max-w-6xl px-2 flex items-center gap-2">
+              {!joined ? (
+                <>
+                  <button
+                    className="flex-1 px-4 py-2 rounded-full bg-blue-600 text-white text-sm transition-colors hover:bg-blue-700 active:translate-y-px disabled:opacity-60"
+                    onClick={handleJoin}
+                    disabled={localCapacityLeft <= 0}
+                  >
+                    {localCapacityLeft <= 0 ? "満員" : joinConfirmOpen ? "処理中…" : "参加する"}
+                  </button>
+                  <button
+                    onClick={() => setFav((v) => !v)}
+                    disabled={joinConfirmOpen}
+                    className={[
+                      "px-4 py-2 rounded-full text-sm transition-colors shadow-sm",
+                      isFav ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50 hover:text-blue-700",
+                      joinConfirmOpen ? "opacity-60 cursor-not-allowed" : "",
+                    ].join(" ")}
+                  >
+                    {isFav ? "お気に入り済" : "お気に入り"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="flex-1 px-4 py-2 rounded-full text-sm shadow-sm hover:bg-blue-50 hover:text-blue-700 active:translate-y-px disabled:opacity-60"
+                    onClick={requestLeave}
+                    disabled={leaveConfirmOpen}
+                  >
+                    {leaveConfirmOpen ? "取り消し中…" : "参加を取り消す"}
+                  </button>
+                  <button
+                    onClick={() => setFav((v) => !v)}
+                    disabled={leaveConfirmOpen}
+                    className={[
+                      "px-4 py-2 rounded-full text-sm transition-colors shadow-sm",
+                      isFav ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50 hover:text-blue-700",
+                      leaveConfirmOpen ? "opacity-60 cursor-not-allowed" : "",
+                    ].join(" ")}
+                  >
+                    {isFav ? "お気に入り済" : "お気に入り"}
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="h-[env(safe-area-inset-bottom)]" />
+          </div>
 
           {/* 参加確認モーダル */}
           {joinConfirmOpen && (
@@ -702,34 +702,34 @@ const confirmJoin = async () => {
               onChangeName={setContactName}
               onChangeMessage={setContactMsg}
               onSubmit={async () => {
-  if (!contactName.trim() || !contactMsg.trim()) {
-    setToast("お名前とメッセージを入力してください");
-    return;
-  }
-  try {
-    setSending(true);
+                if (!contactName.trim() || !contactMsg.trim()) {
+                  setToast("お名前とメッセージを入力してください");
+                  return;
+                }
+                try {
+                  setSending(true);
 
-    // --- ここで主催者通知を送る ---
-    if (listing?.host?.name) {
-      const hostName = String(listing.host.name).trim();
-      pushNotification({
-        hostName,
-        listingId: String(listing.id),
-        listingTitle: String(listing.title || ""),
-        applicant: { name: contactName.trim() || "ゲストユーザー" },
-        type: "message",
-      });
-    }
-    // ------------------------------
+                  // --- ここで主催者通知を送る ---
+                  if (listing?.host?.name) {
+                    const hostName = String(listing.host.name).trim();
+                    pushNotification({
+                      hostName,
+                      listingId: String(listing.id),
+                      listingTitle: String(listing.title || ""),
+                      applicant: { name: contactName.trim() || "ゲストユーザー" },
+                      type: "message",
+                    });
+                  }
+                  // ------------------------------
 
-    await new Promise((r) => setTimeout(r, 800));
-    setToast("お問い合わせを送信しました");
-    setContactOpen(false);
-    setContactMsg("");
-  } finally {
-    setSending(false);
-  }
-}}
+                  await new Promise((r) => setTimeout(r, 800));
+                  setToast("お問い合わせを送信しました");
+                  setContactOpen(false);
+                  setContactMsg("");
+                } finally {
+                  setSending(false);
+                }
+              }}
             />
           )}
 

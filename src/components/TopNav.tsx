@@ -10,6 +10,10 @@ import { useSession, signIn, signOut } from "next-auth/react";
 // ▼ 追加：未読バッジ付き 主催者受信箱ボタン
 import HostInboxButton from "@/components/HostInboxButton";
 
+// ▼ 追加：ユーザー名からイニシャル1文字を作るヘルパー
+const getInitial = (name?: string | null) =>
+  (name?.trim()?.[0] ?? "U").toUpperCase();
+
 export default function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
@@ -26,6 +30,10 @@ export default function TopNav() {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileBtnRef = useRef<HTMLButtonElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // ▼ 追加：アバター画像が壊れた場合のフォールバック制御
+  const [avatarBroken, setAvatarBroken] = useState(false);
+  const displayInitial = !user?.image || avatarBroken;
 
   // 画面遷移でドロワー/プロフィールメニューを閉じる
   useEffect(() => {
@@ -152,25 +160,20 @@ export default function TopNav() {
                     aria-expanded={profileOpen}
                     aria-label="プロフィールメニュー"
                   >
-                    {user?.image ? (
+                    {displayInitial ? (
+                      <span className="h-full w-full grid place-items-center text-xs font-medium text-gray-700">
+                        {getInitial(user?.name ?? null)}
+                      </span>
+                    ) : (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={user.image}
-                        alt={user.name ?? "profile"}
+                        src={user!.image as string}
+                        alt={user!.name ?? "profile"}
                         className="h-full w-full object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        onError={() => setAvatarBroken(true)}
                       />
-                    ) : (
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        className="text-gray-700"
-                      >
-                        <path
-                          fill="currentColor"
-                          d="M12 12a5 5 0 1 0-5-5a5 5 0 0 0 5 5m0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5"
-                        />
-                      </svg>
                     )}
                   </button>
 
