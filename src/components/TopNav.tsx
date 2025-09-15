@@ -5,20 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-// ▼ NextAuth 追加
 import { useSession, signIn, signOut } from "next-auth/react";
-// ▼ 追加：未読バッジ付き 主催者受信箱ボタン
 import HostInboxButton from "@/components/HostInboxButton";
-
-// ▼ 追加：ユーザー名からイニシャル1文字を作るヘルパー
-const getInitial = (name?: string | null) =>
-  (name?.trim()?.[0] ?? "U").toUpperCase();
 
 export default function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // ▼ NextAuth セッション
+  // NextAuth セッション
   const { data: session } = useSession();
   const user = session?.user;
   const isLoggedIn = !!user;
@@ -26,14 +20,10 @@ export default function TopNav() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
 
-  // ▼ プロフィールドロップダウン
+  // プロフィールドロップダウン
   const [profileOpen, setProfileOpen] = useState(false);
   const profileBtnRef = useRef<HTMLButtonElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
-
-  // ▼ 追加：アバター画像が壊れた場合のフォールバック制御
-  const [avatarBroken, setAvatarBroken] = useState(false);
-  const displayInitial = !user?.image || avatarBroken;
 
   // 画面遷移でドロワー/プロフィールメニューを閉じる
   useEffect(() => {
@@ -66,6 +56,25 @@ export default function TopNav() {
     };
   }, [profileOpen]);
 
+  // 🔴 追加：NextAuth の状態を localStorage("auth:loggedIn") にミラー
+  // Listing 詳細ページ側はこのフラグで isLoggedIn を判定しているため、ここで常に同期させる。
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return;
+      if (isLoggedIn) {
+        localStorage.setItem("auth:loggedIn", "1");
+      } else {
+        localStorage.removeItem("auth:loggedIn");
+      }
+      // 同期通知（別タブや同タブの監視フックに反映させる）
+      try {
+        window.dispatchEvent(new StorageEvent("storage", { key: "auth:loggedIn" }));
+      } catch {}
+    } catch {
+      /* noop */
+    }
+  }, [isLoggedIn]);
+
   // 検索（フォーム送信/クリック両対応）
   const onSearch = (e?: React.FormEvent | React.MouseEvent) => {
     if (e?.preventDefault) e.preventDefault();
@@ -77,6 +86,11 @@ export default function TopNav() {
   const onLogout = async () => {
     setProfileOpen(false);
     setOpen(false);
+    // 先に localStorage を落として UI を即時反映
+    try {
+      localStorage.removeItem("auth:loggedIn");
+      window.dispatchEvent(new StorageEvent("storage", { key: "auth:loggedIn" }));
+    } catch {}
     await signOut({ callbackUrl: "/" });
   };
 
@@ -99,7 +113,6 @@ export default function TopNav() {
                 priority
                 className="h-6 w-auto sm:h-7"
               />
-              {/* 旧ロゴ（互換目的・非表示のまま残置） */}
               <div className="h-7 w-7 rounded-md bg-gradient-to-br from-blue-600 to-indigo-500 group-hover:scale-[1.03] transition-transform hidden" />
             </Link>
 
@@ -127,7 +140,6 @@ export default function TopNav() {
 
             {/* 右エリア（PC） */}
             <nav className="ml-auto hidden sm:flex items-center gap-3">
-              {/* 機能グループ：募集一覧・募集する */}
               <div className="flex items-center gap-2">
                 <Link
                   href="/"
@@ -143,10 +155,9 @@ export default function TopNav() {
                 </Link>
               </div>
 
-              {/* ▼ 追加：主催者受信箱（未読バッジ付き） */}
+              {/* 主催者受信箱 */}
               <HostInboxButton />
 
-              {/* 仕切り線（薄いグレー） */}
               <span className="h-6 w-px bg-gray-200" aria-hidden />
 
               {/* 認証グループ */}
@@ -160,24 +171,23 @@ export default function TopNav() {
                     aria-expanded={profileOpen}
                     aria-label="プロフィールメニュー"
                   >
-                    {displayInitial ? (
-                      <span className="h-full w-full grid place-items-center text-xs font-medium text-gray-700">
-                        {getInitial(user?.name ?? null)}
-                      </span>
-                    ) : (
+                    {user?.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={user!.image as string}
-                        alt={user!.name ?? "profile"}
+                        src={user.image}
+                        alt={user.name ?? "profile"}
                         className="h-full w-full object-cover"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        onError={() => setAvatarBroken(true)}
                       />
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" className="text-gray-700">
+                        <path
+                          fill="currentColor"
+                          d="M12 12a5 5 0 1 0-5-5a5 5 0 0 0 5 5m0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5"
+                        />
+                      </svg>
                     )}
                   </button>
 
-                  {/* プロフィールドロップダウン */}
                   {profileOpen && (
                     <div
                       ref={profileMenuRef}
@@ -247,40 +257,28 @@ export default function TopNav() {
               aria-expanded={open}
               aria-controls="mobile-drawer"
             >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                className="text-gray-900"
-              >
-                <path
-                  fill="currentColor"
-                  d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"
-                />
+              <svg width="22" height="22" viewBox="0 0 24 24" className="text-gray-900">
+                <path fill="currentColor" d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z" />
               </svg>
             </button>
           </div>
         </div>
       </header>
 
-      {/* モバイルドロワー：背景は見える＋外側タップで閉じる＋スクロール可 */}
+      {/* モバイルドロワー */}
       {open && (
         <div
           id="mobile-drawer"
           className="fixed inset-0 z-50 sm:hidden"
           aria-modal="true"
           role="dialog"
-          onClick={() => setOpen(false)} // 外側クリックで閉じる
+          onClick={() => setOpen(false)}
         >
-          {/* 半透明オーバーレイ（元画面は見える） */}
           <div className="absolute inset-0 bg-black/30" />
-
-          {/* ドロワー本体（タップを伝播させない） */}
           <div
             className="absolute left-0 right-0 top-0 bg-white rounded-b-2xl shadow-lg p-4 pt-5 max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* モバイル検索 */}
             <form onSubmit={onSearch}>
               <div className="relative">
                 <input
@@ -301,7 +299,6 @@ export default function TopNav() {
             </form>
 
             <div className="mt-4 space-y-5">
-              {/* 機能グループ */}
               <div>
                 <p className="text-xs text-gray-500 mb-2">募集</p>
                 <div className="flex flex-col gap-2">
@@ -319,13 +316,10 @@ export default function TopNav() {
                   >
                     募集する
                   </Link>
-
-                  {/* ▼ 追加：主催者受信箱（未読バッジ付き） */}
                   <HostInboxButton asItem />
                 </div>
               </div>
 
-              {/* 認証/プロフィールグループ */}
               {!isLoggedIn ? (
                 <div>
                   <p className="text-xs text-gray-500 mb-2">アカウント</p>
