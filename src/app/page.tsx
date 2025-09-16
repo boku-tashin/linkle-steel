@@ -3,7 +3,7 @@
 
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import AuthModal from "@/components/AuthModal";
 import { getAllListings, type Listing } from "@/lib/mock-listings";
@@ -41,7 +41,7 @@ type BlogPost = {
 };
 
 // ▼ ご自身のnoteプロフィールURLに変更
-const NOTE_PROFILE_URL = "https://note.com/your_note_id";
+const NOTE_PROFILE_URL = "https://note.com/shiguma_aiweb";
 
 // ▼ 表示用のモック（後でRSSやAPIに差し替えやすい形）
 const BLOG_POSTS: BlogPost[] = [
@@ -563,7 +563,7 @@ className="h-full w-full"       // ← 高さ幅を親のアスペクト比に�
       {/* ▼ SPフィルタ：ボトムシート（モバイル専用） */}
       {filterOpen && (
         <div
-          cclassName="fixed inset-0 z-50 md:hidden"
+          className="fixed inset-0 z-50 md:hidden"
           role="dialog"
           aria-modal="true"
           onClick={() => setFilterOpen(false)}
