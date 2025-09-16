@@ -20,18 +20,32 @@ const geistMono = Geist_Mono({
 
 // ★ ここは元のexportを残しつつ、内容をLinkle向けに拡張
 export const metadata: Metadata = {
-  title: "Linkle | まかせてつながる募集掲示板",
+  title: "Linkle | 趣味も学びも繋がる募集掲示板",
   description:
     "スポーツ・学習・趣味の募集をサクッと作成＆参加。スマホ最適のシンプル設計で“会いたい人”とすぐ出会える。",
+  metadataBase: new URL("https://linkle-steel.vercel.app"), // ← ここ必須
   openGraph: {
-    title: "Linkle | まかせてつながる募集掲示板",
+    title: "Linkle | 趣味も学びも繋がる募集掲示板",
     description:
       "スポーツ・学習・趣味の募集をサクッと作成＆参加。スマホ最適のシンプル設計で“会いたい人”とすぐ出会える。",
     type: "website",
     url: "https://linkle-steel.vercel.app/",
-    images: [{ url: "/ogp.jpg", width: 1200, height: 630, alt: "Linkle" }],
+    images: [
+      {
+        url: "https://linkle-steel.vercel.app/ogp_20250916.jpg", // ← 新ファイル名＋絶対URL
+        width: 1200,
+        height: 630,
+        alt: "Linkle",
+      },
+    ],
   },
-  metadataBase: new URL("https://linkle-steel.vercel.app/"),
+  twitter: {
+    card: "summary_large_image",
+    title: "Linkle | 趣味も学びも繋がる募集掲示板",
+    description:
+      "スポーツ・学習・趣味の募集をサクッと作成＆参加。スマホ最適のシンプル設計で“会いたい人”とすぐ出会える。",
+    images: ["https://linkle-steel.vercel.app/ogp_20250916.jpg"], // ← Twitter用も明示
+  },
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
