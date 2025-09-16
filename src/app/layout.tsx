@@ -30,22 +30,22 @@ export const metadata: Metadata = {
       "スポーツ・学習・趣味の募集をサクッと作成＆参加。スマホ最適のシンプル設計で“会いたい人”とすぐ出会える。",
     type: "website",
     url: "https://linkle-steel.vercel.app/",
-    images: [
-      {
-        url: "https://linkle-steel.vercel.app/ogp_20250916.jpg", // ← 新ファイル名＋絶対URL
-        width: 1200,
-        height: 630,
-        alt: "Linkle",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Linkle | 趣味も学びも繋がる募集掲示板",
-    description:
-      "スポーツ・学習・趣味の募集をサクッと作成＆参加。スマホ最適のシンプル設計で“会いたい人”とすぐ出会える。",
-    images: ["https://linkle-steel.vercel.app/ogp_20250916.jpg"], // ← Twitter用も明示
-  },
+  images: [
+    {
+      url: "https://linkle-steel.vercel.app/ogp_20250916.jpg?v=1", // ← クエリ付き
+      width: 1200,
+      height: 630,
+      alt: "Linkle",
+    },
+  ],
+},
+twitter: {
+  card: "summary_large_image",
+  title: "Linkle | 趣味も学びも繋がる募集掲示板",
+  description:
+    "スポーツ・学習・趣味の募集をサクッと作成＆参加。スマホ最適のシンプル設計で“会いたい人”とすぐ出会える。",
+  images: ["https://linkle-steel.vercel.app/ogp_20250916.jpg?v=1"], // ← ここもクエリ付きに統一
+},
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
